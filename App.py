@@ -2,7 +2,7 @@ import streamlit as st
 from fpdf import FPDF
 from datetime import datetime
 
-st.set_page_config(page_title="PERCO", layout="wide")
+st.set_page_config(page_title="PERCO - BST Pro", layout="wide")
 
 # --- STYLE ---
 st.markdown("""
@@ -20,10 +20,10 @@ with st.container():
     c1, c2 = st.columns(2)
     with c1:
         chantier = st.text_input("Objet / Chantier", placeholder="Nom du projet")
-        chef_c = st.text_input("Chef de chantier (Responsable désigné)", placeholder="Nom du responsable")
+        chef_c = st.text_input("Chef de chantier (CM)", placeholder="Nom du responsable")
     with c2:
         date_v = st.date_input("Date du contrôle", datetime.now())
-        ct = st.text_input("PERCO", "Hugo Alves")
+        ct = st.text_input("Contrôleur (CT)", "Hugo Alves")
 
 st.divider()
 
@@ -67,15 +67,16 @@ for i, (titre, exigence) in points_officiels.items():
     if reponses[i] == "X":
         with st.container():
             st.markdown('<div class="obs-box">', unsafe_allow_html=True)
-            
-            c_m1, c_m2 = st.columns(2)
-            with c_m1:
+            c_obs, c_data = st.columns(2)
+            with c_obs:
                 m = st.text_area(f"Mesure corrective (Point {i})", key=f"m_{i}", height=100)
-                photo = st.file_uploader(f"📸 Prendre/Ajouter une photo (Point {i})", type=['png', 'jpg', 'jpeg'], key=f"p_{i}")
-            with c_m2:
+                # Utilisation du chargeur de fichier pour accéder à la caméra arrière
+                photo = st.file_uploader(f"Prendre/Ajouter une photo (Point {i})", type=['png', 'jpg', 'jpeg'], key=f"p_{i}")
+            with c_data:
+                # Responsable auto-rempli par le Chef de chantier
                 resp = st.text_input(f"Responsable", value=chef_c, key=f"res_{i}")
-                echeance = st.text_input(f"Échéance", placeholder="ex: Immédiat / 24h", key=f"ech_{i}")
-                ctrl_final = st.selectbox(f"Statut Contrôle Final", ["En attente", "Fait - Conforme", "À revoir"], key=f"cf_{i}")
+                echeance = st.text_input(f"Échéance", placeholder="ex: Immédiat", key=f"ech_{i}")
+                ctrl_final = st.selectbox(f"Contrôle final", ["En attente", "Fait - Conforme", "À revoir"], key=f"cf_{i}")
             
             suivi_mesures[i] = {"mesure": m, "responsable": resp, "echeance": echeance, "ctrl": ctrl_final}
             st.markdown('</div>', unsafe_allow_html=True)
@@ -86,40 +87,33 @@ if st.button("💾 GÉNÉRER LE RAPPORT DE SUIVI"):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", 'B', 14)
-    pdf.cell(190, 10, "PLANIFICATION ET SUIVI DES MESURES", 1, 1, 'C')
+    pdf.cell(190, 10, "PLANIFICATION ET SUIVI DES MESURES BST", 1, 1, 'C')
     
     pdf.ln(5)
     pdf.set_font("Arial", size=10)
     pdf.cell(95, 8, f"Chantier: {chantier}", 1)
     pdf.cell(95, 8, f"Date: {date_v}", 1, 1)
-    pdf.cell(95, 8, f"PERCO: {ct}", 1)
-    pdf.cell(95, 8, f"Responsable: {chef_c}", 1, 1)
+    pdf.cell(95, 8, f"Chef de chantier: {chef_c}", 1)
+    pdf.cell(95, 8, f"Controleur: {ct}", 1, 1)
     
     pdf.ln(10)
-    pdf.set_font("Arial", 'B', 9)
+    pdf.set_font("Arial", 'B', 8)
     pdf.set_fill_color(230, 230, 230)
-    pdf.cell(10, 10, "N°", 1, 0, 'C', True)
-    pdf.cell(80, 10, "Mesure à mettre en oeuvre", 1, 0, 'C', True)
+    pdf.cell(10, 10, "N", 1, 0, 'C', True)
+    pdf.cell(80, 10, "Mesure", 1, 0, 'C', True)
     pdf.cell(40, 10, "Responsable", 1, 0, 'C', True)
-    pdf.cell(30, 10, "Échéance", 1, 0, 'C', True)
-    pdf.cell(30, 10, "Ctrl Final", 1, 1, 'C', True)
+    pdf.cell(30, 10, "Echeance", 1, 0, 'C', True)
+    pdf.cell(30, 10, "Final", 1, 1, 'C', True)
     
-    pdf.set_font("Ariaphoto = st.camera_input(f"📸 Photo du défaut (Point {i})", key=f"p_{i}")l", size=8)
-    errors = 0
+    pdf.set_font("Arial", size=8)
     for i, data in suivi_mesures.items():
-        if data:
-            pdf.cell(10, 10, str(i), 1, 0, 'C')
-            pdf.cell(80, 10, data['mesure'][:50], 1, 0, 'L')
-            pdf.cell(40, 10, data['responsable'], 1, 0, 'C')
-            pdf.cell(30, 10, data['echeance'], 1, 0, 'C')
-            pdf.cell(30, 10, data['ctrl'], 1, 1, 'C')
-            errors += 1
+        pdf.cell(10, 10, str(i), 1, 0, 'C')
+        pdf.cell(80, 10, data['mesure'][:50] if data['mesure'] else "A preciser", 1, 0, 'L')
+        pdf.cell(40, 10, data['responsable'], 1, 0, 'C')
+        pdf.cell(30, 10, data['echeance'], 1, 0, 'C')
+        pdf.cell(30, 10, data['ctrl'], 1, 1, 'C')
             
-    if errors == 0:
-        pdf.cell(190, 10, "Aucune anomalie à signaler.", 1, 1, 'C')
-
-    pdf_name = f"Suivi__{chantier}.pdf"
+    pdf_name = f"Rapport_BST_{chantier}.pdf"
     pdf.output(pdf_name)
-    
     with open(pdf_name, "rb") as f:
-        st.download_button("⬇️ Télécharger le rapport de suivi", f, file_name=pdf_name)
+        st.download_button("⬇️ Télécharger le rapport", f, file_name=pdf_name)
