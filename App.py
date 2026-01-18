@@ -14,7 +14,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-st.title("📋 Contrôle des postes de travail (BST)")
+st.title("📋 Contrôle des postes de travail")
 
 # --- EN-TÊTE ---
 with st.container():
