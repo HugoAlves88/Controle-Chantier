@@ -71,7 +71,7 @@ for i, (titre, exigence) in points_officiels.items():
             c_m1, c_m2 = st.columns(2)
             with c_m1:
                 m = st.text_area(f"Mesure corrective (Point {i})", key=f"m_{i}", height=100)
-                photo = st.camera_input(f"📸 Photo du défaut (Point {i})", key=f"p_{i}")
+                photo = st.file_uploader(f"📸 Prendre/Ajouter une photo (Point {i})", type=['png', 'jpg', 'jpeg'], key=f"p_{i}")
             with c_m2:
                 resp = st.text_input(f"Responsable", value=chef_c, key=f"res_{i}")
                 echeance = st.text_input(f"Échéance", placeholder="ex: Immédiat / 24h", key=f"ech_{i}")
@@ -104,7 +104,7 @@ if st.button("💾 GÉNÉRER LE RAPPORT DE SUIVI"):
     pdf.cell(30, 10, "Échéance", 1, 0, 'C', True)
     pdf.cell(30, 10, "Ctrl Final", 1, 1, 'C', True)
     
-    pdf.set_font("Arial", size=8)
+    pdf.set_font("Ariaphoto = st.camera_input(f"📸 Photo du défaut (Point {i})", key=f"p_{i}")l", size=8)
     errors = 0
     for i, data in suivi_mesures.items():
         if data:
