@@ -24,9 +24,8 @@ with st.container():
         chef_c = st.text_input("CM (Chef de chantier / Maître d'œuvre)")
     with c2:
         date_v = st.date_input("Date", datetime.now())
-        ct = st.text_input("CT (Contrôleur)", "Hugo Alves")
     with c3:
-        perco = st.text_input("PERCO", "Référence rapport")
+        perco = st.text_input("PERCO", "Hugo Alves")
 
 st.divider()
 
