@@ -26,4 +26,4 @@ if st.button("Générer le rapport PDF"):
         pdf.cell(200, 10, txt=f"{p}: {v}", ln=True)
     pdf.output("rapport.pdf")
     st.success("Rapport généré avec succès !")
-    
+
