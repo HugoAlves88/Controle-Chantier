@@ -2,7 +2,7 @@ import streamlit as st
 from fpdf import FPDF
 from datetime import datetime
 
-st.set_page_config(page_title="PERCO - BST Pro", layout="wide")
+st.set_page_config(page_title="PERCO", layout="wide")
 
 # --- STYLE ---
 st.markdown("""
@@ -23,7 +23,7 @@ with st.container():
         chef_c = st.text_input("Chef de chantier (Responsable désigné)", placeholder="Nom du responsable")
     with c2:
         date_v = st.date_input("Date du contrôle", datetime.now())
-        ct = st.text_input("Contrôleur (CT)", "Hugo Alves")
+        ct = st.text_input("PERCO", "Hugo Alves")
 
 st.divider()
 
@@ -86,13 +86,13 @@ if st.button("💾 GÉNÉRER LE RAPPORT DE SUIVI"):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", 'B', 14)
-    pdf.cell(190, 10, "PLANIFICATION ET SUIVI DES MESURES BST", 1, 1, 'C')
+    pdf.cell(190, 10, "PLANIFICATION ET SUIVI DES MESURES", 1, 1, 'C')
     
     pdf.ln(5)
     pdf.set_font("Arial", size=10)
     pdf.cell(95, 8, f"Chantier: {chantier}", 1)
     pdf.cell(95, 8, f"Date: {date_v}", 1, 1)
-    pdf.cell(95, 8, f"Contrôleur: {ct}", 1)
+    pdf.cell(95, 8, f"PERCO: {ct}", 1)
     pdf.cell(95, 8, f"Responsable: {chef_c}", 1, 1)
     
     pdf.ln(10)
@@ -118,7 +118,7 @@ if st.button("💾 GÉNÉRER LE RAPPORT DE SUIVI"):
     if errors == 0:
         pdf.cell(190, 10, "Aucune anomalie à signaler.", 1, 1, 'C')
 
-    pdf_name = f"Suivi_BST_{chantier}.pdf"
+    pdf_name = f"Suivi__{chantier}.pdf"
     pdf.output(pdf_name)
     
     with open(pdf_name, "rb") as f:
