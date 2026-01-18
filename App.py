@@ -3,105 +3,116 @@ from fpdf import FPDF
 from datetime import datetime
 
 # Configuration de la page
-st.set_page_config(page_title="PERCO - Contrôle BST", layout="centered")
+st.set_page_config(page_title="PERCO - Contrôle BST", layout="wide")
 
-# --- STYLE PERSONNALISÉ ---
+# --- STYLE POUR RESSEMBLER AU PAPIER ---
 st.markdown("""
     <style>
-    .main { background-color: #f5f7f9; }
-    .stRadio > label { font-weight: bold; color: #1f77b4; }
-    .stButton>button { width: 100%; border-radius: 5px; height: 3em; background-color: #007bff; color: white; }
+    .stRadio > div { flex-direction: row !important; }
+    .stRadio label { padding: 5px 15px; background: #eee; border-radius: 5px; margin: 2px; }
+    div[data-testid="stExpander"] { border: 1px solid #ccc; }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🏗️ Contrôle de Sécurité PERCO")
-st.subheader("Rapport de visite de chantier (BST)")
+st.title("🏗️ Contrôle de Sécurité PERCO (BST)")
 
-# --- INFORMATIONS GÉNÉRALES ---
-with st.expander("📌 Informations du chantier", expanded=True):
+# --- ENTÊTE (Comme ton document) ---
+with st.container():
     col1, col2 = st.columns(2)
     with col1:
-        chantier = st.text_input("Nom du chantier", "Chantier exemple")
-        chef = st.text_input("Responsable", "Hugo Alves")
+        chantier = st.text_input("Nom du chantier", "Ex: Rénovation Lausanne")
+        chef_chantier = st.text_input("Chef de chantier (interne)", "Nom du chef")
     with col2:
         date_visite = st.date_input("Date de visite", datetime.now())
-        meteo = st.selectbox("Météo", ["Soleil", "Pluie", "Vent", "Neige"])
+        controleur = st.text_input("Contrôleur", "Hugo Alves")
 
-# --- LES 20 POINTS DE CONTRÔLE ---
-st.write("### 📝 Liste de contrôle")
+st.divider()
 
-sections = {
-    "1. Organisation": [
-        "1.1 Plan de sécurité (art. 4 OTConst)",
-        "1.2 Installation de chantier (art. 7 OTConst)",
-        "1.3 Sorties de secours / Premiers secours"
-    ],
-    "2. Fouilles et Travaux spéciaux": [
-        "2.1 Étayage des fouilles > 1.50m (art. 68)",
-        "2.2 Accès aux fouilles (échelles, rampes)",
-        "2.3 Stockage des déblais (distance de 60cm)"
-    ],
-    "3. Échafaudages": [
-        "3.1 Garde-corps complet (80cm - art. 11)",
-        "3.2 Fixations et stabilité",
-        "3.3 Accès sécurisés aux étages"
-    ],
-    "4. Travaux en hauteur": [
-        "4.1 Protection contre les chutes (art. 15)",
-        "4.2 Échelles: dépassement de 1m (art. 20)",
-        "4.3 Utilisation de nacelles / PEMP"
-    ],
-    "5. Équipements et Électricité": [
-        "5.1 Armoires électriques de chantier conformes",
-        "5.2 Matériel électrique (câbles, prises)",
-        "5.3 Grues et engins de terrassement"
-    ],
-    "6. Hygiène et EPI": [
-        "6.1 Port du casque et chaussures (EPI)",
-        "6.2 Vestiaires et réfectoires propres",
-        "6.3 Élimination des déchets"
-    ]
-}
+# --- STRUCTURE SIMPLE (NUMÉRO + CASE + OBSERVATION) ---
+st.write("### Grille de contrôle")
+st.caption("Cochez la case correspondante et ajoutez le chiffre/observation si nécessaire.")
+
+# Liste des 20 points simplifiée
+points_bst = [
+    "1. Préparation du travail / Plan de sécurité",
+    "2. Installations de chantier",
+    "3. Voies de circulation / Accès",
+    "4. Échelles et escabeaux",
+    "5. Travaux de toiture",
+    "6. Risques de chute (hauteur)",
+    "7. Ouvertures dans le sol / trémies",
+    "8. Grues et engins",
+    "9. Plateformes de travail",
+    "10. Fouilles et puits (Art. 68)",
+    "11. Échafaudages de façade",
+    "12. Échafaudages roulants",
+    "13. EPI (Casque, chaussures, gilet)",
+    "14. Électricité et coffrets",
+    "15. Substances dangereuses / Amiante",
+    "16. Ordre et propreté",
+    "17. Protection contre les intempéries",
+    "18. Levage de charges",
+    "19. Mesures de premiers secours",
+    "20. Coordination entre entreprises"
+]
 
 reponses = {}
 observations = {}
 
-for section, items in sections.items():
-    with st.expander(f"🔵 {section}"):
-        for item in items:
-            col_q, col_obs = st.columns([2, 1])
-            with col_q:
-                reponses[item] = st.radio(item, ["Conforme", "Non-conforme", "N/A"], horizontal=True)
-            with col_obs:
-                observations[item] = st.text_input("Obs.", key=f"obs_{item}")
+# Création de la grille (Tableau)
+for p in points_bst:
+    col_num, col_check, col_obs = st.columns([2, 2, 3])
+    
+    with col_num:
+        st.write(f"**{p}**")
+    
+    with col_check:
+        # On utilise une croix (X) ou conforme (C) comme dans ton PDF
+        reponses[p] = st.radio(f"Statut {p}", ["C", "X", "N/A"], key=f"check_{p}", label_visibility="collapsed")
+    
+    with col_obs:
+        observations[p] = st.text_input("Observations / Mesures", key=f"obs_{p}", placeholder="Chiffre ou détail...")
 
-# --- SIGNATURE ET VALIDATION ---
+# --- SIGNATURE ET GÉNÉRATION ---
 st.divider()
-signature = st.text_input("Signature (Nom pour validation)")
+col_sig1, col_sig2 = st.columns(2)
+with col_sig1:
+    signature_hugo = st.text_input("Signature du contrôleur")
+with col_sig2:
+    # Option photo pour la version mobile
+    photo = st.camera_input("Prendre une photo d'un défaut (optionnel)")
 
-if st.button("🚀 GÉNÉRER ET TÉLÉCHARGER LE RAPPORT"):
+if st.button("💾 GÉNÉRER LE RAPPORT FINAL"):
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial", 'B', 16)
+    pdf.set_font("Arial", 'B', 14)
     pdf.cell(200, 10, txt="RAPPORT DE CONTRÔLE BST - PERCO", ln=True, align='C')
     
-    pdf.set_font("Arial", size=12)
-    pdf.ln(10)
-    pdf.cell(200, 10, txt=f"Chantier: {chantier} | Date: {date_visite}", ln=True)
-    pdf.cell(200, 10, txt=f"Responsable: {chef} | Météo: {meteo}", ln=True)
+    pdf.set_font("Arial", size=10)
+    pdf.ln(5)
+    pdf.cell(100, 8, txt=f"Chantier: {chantier}")
+    pdf.cell(100, 8, txt=f"Date: {date_visite}", ln=True)
+    pdf.cell(100, 8, txt=f"Chef de chantier: {chef_chantier}")
+    pdf.cell(100, 8, txt=f"Contrôleur: {controleur}", ln=True)
     pdf.ln(5)
     
-    for item, status in reponses.items():
-        obs_text = f" | Obs: {observations[item]}" if observations[item] else ""
-        pdf.cell(200, 8, txt=f"- {item}: {status}{obs_text}", ln=True)
+    # En-tête tableau
+    pdf.set_fill_color(200, 200, 200)
+    pdf.cell(100, 8, "Point de contrôle", 1, 0, 'L', True)
+    pdf.cell(20, 8, "Statut", 1, 0, 'C', True)
+    pdf.cell(70, 8, "Observations", 1, 1, 'L', True)
+    
+    for p in points_bst:
+        pdf.cell(100, 7, p[:50], 1)
+        pdf.cell(20, 7, reponses[p], 1, 0, 'C')
+        pdf.cell(70, 7, observations[p][:40], 1, 1)
     
     pdf.ln(10)
-    pdf.cell(200, 10, txt=f"Validé par: {signature}", ln=True)
+    pdf.cell(200, 10, txt=f"Validé par: {signature_hugo}", ln=True)
     
-    pdf_output = "Rapport_Chantier.pdf"
+    pdf_output = "Rapport_BST.pdf"
     pdf.output(pdf_output)
     
     with open(pdf_output, "rb") as f:
-        st.download_button("⬇️ Télécharger le PDF", f, file_name=f"Rapport_{chantier}.pdf")
-    st.success("Le rapport est prêt !")
-    
+        st.download_button("⬇️ Télécharger le rapport PDF", f, file_name=f"BST_{chantier}_{date_visite}.pdf")
+    st.success("Rapport créé avec succès !")
