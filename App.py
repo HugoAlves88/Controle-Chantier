@@ -1,8 +1,11 @@
 import streamlit as st
 from fpdf import FPDF
 from datetime import datetime
+from PIL import Image
+import tempfile
+import os
 
-st.set_page_config(page_title="PERCO - BST Pro", layout="wide")
+st.set_page_config(page_title="PERCO - BST avec Photos", layout="wide")
 
 # --- STYLE ---
 st.markdown("""
@@ -13,7 +16,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🏗️ Contrôle BST - Suivi de Sécurité")
+st.title("🏗️ Contrôle BST - Rapport Complet avec Photos")
 
 # --- EN-TÊTE ---
 with st.container():
@@ -29,30 +32,31 @@ st.divider()
 
 # --- POINTS DE CONTRÔLE ---
 points_officiels = {
-    1: ["Préparation du travail", "Plan de sécurité et protection de la santé (art. 4 OTConst)."],
-    2: ["Voies d'accès au chantier", "Passages sûrs, largeur > 1,00 m (art. 11 OTConst)."],
-    3: ["Escaliers", "Main courante si plus de 5 marches (art. 11 OTConst)."],
-    4: ["Échelles", "Dépassement de 1m au-dessus de la sortie (art. 20 OTConst)."],
+    1: ["Préparation du travail", "Plan de sécurité (art. 4 OTConst)."],
+    2: ["Voies d'accès", "Passages sûrs, largeur > 1,00 m (art. 11 OTConst)."],
+    3: ["Escaliers", "Main courante si > 5 marches."],
+    4: ["Échelles", "Dépassement de 1m (art. 20 OTConst)."],
     5: ["EPI", "Casque, chaussures, gilets (art. 5 et 7 OTConst)."],
-    6: ["Ordre et propreté", "Passages dégagés, pas de risque de trébucher (art. 9 OTConst)."],
-    7: ["Bords de chutes", "Garde-corps complet si chute > 2,00 m (art. 15 OTConst)."],
-    8: ["Différences de niveau", "Protection si h > 0,50 m (art. 15 OTConst)."],
-    9: ["Ouvertures au sol", "Couverture résistante et fixée (art. 18 OTConst)."],
-    10: ["Fouilles", "Étayage si profondeur > 1,50 m (art. 68 OTConst)."],
-    11: ["Hauteur échafaudages", "Garde-corps dépassant de 80 cm (art. 28 OTConst)."],
-    12: ["Échafaudages façade", "Distance façade <= 30 cm, ancrages conformes."],
-    13: ["Étayage du toit", "Poutrelles de coffrage avec têtes à fourche."],
-    14: ["Coffrage mural", "Étais de réglage, protection antichute opposée."],
-    15: ["Grue", "Formation grutier, fondations calculées (Ord. sur les grues)."],
-    16: ["Talus", "Pente 2:1 ou 1:1 selon terrain (art. 73 OTConst)."],
-    17: ["Bord des fouilles", "Main courante de délimitation (art. 23 OTConst)."],
-    18: ["Énergie / Substances", "Installations électriques sûres, stockage produits."],
-    19: ["Urgence", "Plan d'alarme visible, premiers secours assurés."],
-    20: ["Amiante", "Instruction des collaborateurs (Règles de base)."]
+    6: ["Ordre et propreté", "Passages dégagés."],
+    7: ["Bords de chutes", "Garde-corps si chute > 2,00 m."],
+    8: ["Différences de niveau", "Protection si h > 0,50 m."],
+    9: ["Ouvertures au sol", "Couverture fixée (art. 18 OTConst)."],
+    10: ["Fouilles", "Étayage si prof. > 1,50 m."],
+    11: ["Hauteur échafaudages", "Garde-corps > 80 cm."],
+    12: ["Échafaudages façade", "Distance façade <= 30 cm."],
+    13: ["Étayage du toit", "Poutrelles avec têtes à fourche."],
+    14: ["Coffrage mural", "Étais de réglage."],
+    15: ["Grue", "Formation et fondations conformes."],
+    16: ["Talus", "Pente conforme au terrain."],
+    17: ["Bord des fouilles", "Main courante de délimitation."],
+    18: ["Énergie / Substances", "Installations électriques sûres."],
+    19: ["Urgence", "Plan d'alarme et premiers secours."],
+    20: ["Amiante", "Instruction des collaborateurs."]
 }
 
 reponses = {}
 suivi_mesures = {}
+photos_dict = {}
 
 st.subheader("Grille de contrôle")
 
@@ -69,26 +73,29 @@ for i, (titre, exigence) in points_officiels.items():
             st.markdown('<div class="obs-box">', unsafe_allow_html=True)
             c_obs, c_data = st.columns(2)
             with c_obs:
-                m = st.text_area(f"Mesure corrective (Point {i})", key=f"m_{i}", height=100)
-                # Utilisation du chargeur de fichier pour accéder à la caméra arrière
-                photo = st.file_uploader(f"Prendre/Ajouter une photo (Point {i})", type=['png', 'jpg', 'jpeg'], key=f"p_{i}")
+                m = st.text_area(f"Mesure corrective (Point {i})", key=f"m_{i}")
+                # Le file_uploader permet d'utiliser la caméra arrière
+                uploaded_photo = st.file_uploader(f"📸 Prendre/Ajouter une photo (Point {i})", type=['png', 'jpg', 'jpeg'], key=f"p_{i}")
+                if uploaded_photo:
+                    photos_dict[i] = uploaded_photo
+                    st.image(uploaded_photo, width=200)
             with c_data:
-                # Responsable auto-rempli par le Chef de chantier
                 resp = st.text_input(f"Responsable", value=chef_c, key=f"res_{i}")
                 echeance = st.text_input(f"Échéance", placeholder="ex: Immédiat", key=f"ech_{i}")
-                ctrl_final = st.selectbox(f"Contrôle final", ["En attente", "Fait - Conforme", "À revoir"], key=f"cf_{i}")
+                ctrl_f = st.selectbox(f"Contrôle final", ["En attente", "Fait", "À revoir"], key=f"cf_{i}")
             
-            suivi_mesures[i] = {"mesure": m, "responsable": resp, "echeance": echeance, "ctrl": ctrl_final}
+            suivi_mesures[i] = {"mesure": m, "resp": resp, "ech": echeance, "ctrl": ctrl_f}
             st.markdown('</div>', unsafe_allow_html=True)
 
-# --- GÉNÉRATION DU RAPPORT ---
+# --- GÉNÉRATION DU RAPPORT AVEC PHOTOS ---
 st.divider()
-if st.button("💾 GÉNÉRER LE RAPPORT DE SUIVI"):
+if st.button("💾 GÉNÉRER LE RAPPORT AVEC PHOTOS"):
     pdf = FPDF()
+    
+    # PAGE 1 & 2 : Tableau des mesures
     pdf.add_page()
     pdf.set_font("Arial", 'B', 14)
-    pdf.cell(190, 10, "PLANIFICATION ET SUIVI DES MESURES BST", 1, 1, 'C')
-    
+    pdf.cell(190, 10, "RAPPORT DE SECURITE BST - PERCO", 1, 1, 'C')
     pdf.ln(5)
     pdf.set_font("Arial", size=10)
     pdf.cell(95, 8, f"Chantier: {chantier}", 1)
@@ -97,23 +104,42 @@ if st.button("💾 GÉNÉRER LE RAPPORT DE SUIVI"):
     pdf.cell(95, 8, f"Controleur: {ct}", 1, 1)
     
     pdf.ln(10)
-    pdf.set_font("Arial", 'B', 8)
+    pdf.set_font("Arial", 'B', 9)
     pdf.set_fill_color(230, 230, 230)
     pdf.cell(10, 10, "N", 1, 0, 'C', True)
     pdf.cell(80, 10, "Mesure", 1, 0, 'C', True)
     pdf.cell(40, 10, "Responsable", 1, 0, 'C', True)
     pdf.cell(30, 10, "Echeance", 1, 0, 'C', True)
-    pdf.cell(30, 10, "Final", 1, 1, 'C', True)
+    pdf.cell(30, 10, "Statut", 1, 1, 'C', True)
     
     pdf.set_font("Arial", size=8)
     for i, data in suivi_mesures.items():
         pdf.cell(10, 10, str(i), 1, 0, 'C')
-        pdf.cell(80, 10, data['mesure'][:50] if data['mesure'] else "A preciser", 1, 0, 'L')
-        pdf.cell(40, 10, data['responsable'], 1, 0, 'C')
-        pdf.cell(30, 10, data['echeance'], 1, 0, 'C')
+        pdf.cell(80, 10, data['mesure'][:50], 1, 0, 'L')
+        pdf.cell(40, 10, data['resp'], 1, 0, 'C')
+        pdf.cell(30, 10, data['ech'], 1, 0, 'C')
         pdf.cell(30, 10, data['ctrl'], 1, 1, 'C')
-            
+
+    # PAGE SUIVANTE : ANNEXE PHOTOS
+    if photos_dict:
+        pdf.add_page()
+        pdf.set_font("Arial", 'B', 14)
+        pdf.cell(190, 10, "ANNEXE : PHOTOS DES DEFAUTS", 0, 1, 'L')
+        pdf.ln(5)
+        
+        for i, img_file in photos_dict.items():
+            # Sauvegarde temporaire de l'image pour l'insérer dans le PDF
+            img = Image.open(img_file)
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
+                img.save(tmp.name)
+                pdf.set_font("Arial", 'B', 11)
+                pdf.cell(190, 10, f"Point {i} : {points_officiels[i][0]}", 0, 1)
+                # On insère l'image (Largeur 80mm pour en mettre deux par page si besoin)
+                pdf.image(tmp.name, x=10, w=80)
+                pdf.ln(5)
+                os.unlink(tmp.name) # Supprime le fichier temporaire
+
     pdf_name = f"Rapport_BST_{chantier}.pdf"
     pdf.output(pdf_name)
     with open(pdf_name, "rb") as f:
-        st.download_button("⬇️ Télécharger le rapport", f, file_name=pdf_name)
+        st.download_button("⬇️ Télécharger le rapport final (PDF + Photos)", f, file_name=pdf_name)
